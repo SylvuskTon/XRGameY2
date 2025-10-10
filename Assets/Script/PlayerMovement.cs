@@ -6,7 +6,6 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement")]
     public Rigidbody rb;
     public float moveSPD;
-    //public float rotateSPD;
 
     public float groundDrag;
 
@@ -19,17 +18,31 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask playerLayer;
     public LayerMask fridgeLayer;
 
+    public Camera firstPersonCamera;
+    PlayerCam cam;
+
     public GameObject fridge;
     public Transform orientation;
+    public GameObject textUI;
+    public Transform handPosition;
+    bool isHolding;
+    GameObject heldObject;
+
+    public bool fridgeActive;
 
     float horizontalInput;
     float verticalInput;
 
     Vector3 moveDirection;
 
+    int ingredientAdded;
+
+    public GameObject spaget;
+
     private void Start()
     {
        rb = GetComponent<Rigidbody>();
+       cam = firstPersonCamera.GetComponent<PlayerCam>();
     }
     private void MyInput()
     {
@@ -38,30 +51,12 @@ public class PlayerMovement : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        // if (Input.GetKey(KeyCode.W))  //allow forward and backward
-        // {
-        //    rb.linearVelocity = transform.forward * moveSPD * Time.deltaTime;
 
-        //  }
-        //  if (Input.GetKey(KeyCode.S))  //allow forward and backward
-        //  {
-        //      rb.linearVelocity = -transform.forward * moveSPD * Time.deltaTime;
-
-        //  }
         MovePlayer();
     }
     private void Update()
     {
-        // if (Input.GetKey(KeyCode.A))  //rotate
-        // {
-        //     transform.Rotate(0, -rotateSPD * Time.deltaTime, 0);
-
-        //  }
-        // if (Input.GetKey(KeyCode.D))  //rotate
-        //  {
-        //      transform.Rotate(0, rotateSPD * Time.deltaTime, 0);
-
-        //   }
+     
         DetectionRange();
 
         //ground check
@@ -99,25 +94,89 @@ public class PlayerMovement : MonoBehaviour
 
     void DetectionRange()
     {
-        Debug.DrawRay(transform.position, transform.forward * sightRange, Color.green);
+        Debug.DrawRay(firstPersonCamera.transform.position, firstPersonCamera.transform.forward * sightRange, Color.green);
         RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.forward, out hit, sightRange, fridgeLayer))
+        if (Physics.Raycast(firstPersonCamera.transform.position, firstPersonCamera.transform.forward, out hit, sightRange, fridgeLayer))
         {
             Debug.Log("Something Found");
+
+            if(!fridgeActive)
+                textUI.SetActive(true);
+
             if (hit.collider != null) //if found something
             {
                 if (Input.GetKeyDown(KeyCode.E))
                 {
-                    Debug.Log("EEEEEEEEEEEEEEE");
-                    fridge.SetActive(true); //set fridge UI true
+                    if (hit.collider.tag == "Fridge")
+                    {
+                        fridgeActive = !fridgeActive;
+                        fridge.SetActive(fridgeActive); //set fridge UI true
+                        cam.canLook = !fridgeActive;
+                        textUI.SetActive(false);
+                    }
+
+                    if (hit.collider.tag == "Pickup")
+                    {
+                        if (!isHolding)
+                        {
+                            heldObject = hit.collider.gameObject;
+
+                            hit.transform.SetParent(handPosition);
+                            hit.transform.localPosition = Vector3.zero;
+                            hit.transform.localRotation = Quaternion.identity;
+                            hit.transform.GetComponent<BoxCollider>().enabled = false;
+                            Debug.Log("Take the cheese!!!");
+                        }
+                        //if we hit a place / pot
+                        //if we're holding something
+                        //take our held object and destroy it 
+                        //set is holding to false.
+                        //maybe a script on th epot to tell if we have all the ingredients?
+                    }
+                    if (hit.collider.tag == "Sauce")
+                    {
+                        if (!isHolding)
+                        {
+                            heldObject = hit.collider.gameObject;
+
+                            hit.transform.SetParent(handPosition);
+                            hit.transform.localPosition = Vector3.zero;
+                            hit.transform.localRotation = Quaternion.identity;
+                            hit.transform.GetComponent<BoxCollider>().enabled = false;
+
+                            Debug.Log("Take the sauce!!!");
+                        }
+                       
+                    }
+
+                    if (hit.collider.tag == "Pot")
+                    {
+                        if (heldObject)
+                        {
+                            if (heldObject.tag == "Sauce")
+                            {
+                                if(ingredientAdded >= 2)
+                                {
+                                    Debug.Log("All done!");
+                                    Destroy(heldObject);
+                                    
+                                }
+                            }
+                            else
+                            {
+                                ingredientAdded++;
+                                Destroy(heldObject);
+                            }
+                        }
+                    }
                 }
 
-                if (Input.GetKeyDown(KeyCode.R))
-                {
-                    Debug.Log("RRRRRRRRRR");
-                    fridge.SetActive(false); //set fridge UI false
-                }
             }
+            
+        }
+        else
+        {
+            textUI.SetActive(false);
         }
     }
 }
