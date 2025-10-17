@@ -1,3 +1,5 @@
+using DialogueEditor;
+using System.Xml.Serialization;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
@@ -38,6 +40,12 @@ public class PlayerMovement : MonoBehaviour
     int ingredientAdded;
 
     public GameObject spaget;
+    public GameObject rDropText;
+    public GameObject doorUnlock;
+    public GameObject cantTalkAfterFinish;
+
+
+    [SerializeField] private NPCConversation endDialogue;
 
     private void Start()
     {
@@ -58,6 +66,7 @@ public class PlayerMovement : MonoBehaviour
     {
      
         DetectionRange();
+        DropItem();
 
         //ground check
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, groundLayer);
@@ -121,12 +130,17 @@ public class PlayerMovement : MonoBehaviour
                         {
                             heldObject = hit.collider.gameObject;
 
+                            rDropText.SetActive(true);
                             hit.transform.SetParent(handPosition);
                             hit.transform.localPosition = Vector3.zero;
                             hit.transform.localRotation = Quaternion.identity;
                             hit.transform.GetComponent<BoxCollider>().enabled = false;
+                            hit.transform.GetComponent<Rigidbody>().isKinematic = true;
+                            isHolding = true;
+                            rDropText.SetActive(true);
                             Debug.Log("Take the cheese!!!");
                         }
+
                         //if we hit a place / pot
                         //if we're holding something
                         //take our held object and destroy it 
@@ -139,11 +153,13 @@ public class PlayerMovement : MonoBehaviour
                         {
                             heldObject = hit.collider.gameObject;
 
+                            rDropText.SetActive(true);
                             hit.transform.SetParent(handPosition);
                             hit.transform.localPosition = Vector3.zero;
                             hit.transform.localRotation = Quaternion.identity;
                             hit.transform.GetComponent<BoxCollider>().enabled = false;
-
+                            hit.transform.GetComponent<Rigidbody>().isKinematic = true;
+                            isHolding = true;
                             Debug.Log("Take the sauce!!!");
                         }
                        
@@ -159,13 +175,20 @@ public class PlayerMovement : MonoBehaviour
                                 {
                                     Debug.Log("All done!");
                                     Destroy(heldObject);
-                                    
+                                    rDropText.SetActive(false);
+                                    ConversationManager.Instance.StartConversation(endDialogue);
+                                    doorUnlock.SetActive(false);
+                                    cantTalkAfterFinish.SetActive(false);
+
                                 }
                             }
                             else
                             {
                                 ingredientAdded++;
                                 Destroy(heldObject);
+                                isHolding = false;
+                                rDropText.SetActive(false);
+
                             }
                         }
                     }
@@ -177,6 +200,25 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             textUI.SetActive(false);
+           
         }
+    }
+
+    void DropItem()
+    {
+        if ( Input.GetKeyDown(KeyCode.R))
+        {
+            if (isHolding)
+            {
+                heldObject.transform.SetParent(null);
+                heldObject.transform.GetComponent<BoxCollider>().enabled = true;
+                heldObject.transform.GetComponent<Rigidbody>().isKinematic = false;
+                isHolding = false;
+                heldObject = null;
+                rDropText.SetActive(false);
+                Debug.Log("casually drops item");
+            }
+        }
+
     }
 }
